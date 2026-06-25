@@ -4,4 +4,6 @@ A standalone HTML gym dashboard.
 
 ## Use Online
 
-This project is intended to be hosted with GitHub Pages. Open `index.html` directly or visit the GitHub Pages URL after deployment.
+Visit the dashboard at:
+
+https://momo8285.github.io/gym-dashboard-v2/
