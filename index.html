@@ -949,6 +949,19 @@ function saveMember(e) {
   };
   if (editId) {
     DB.members = DB.members.map(x=>x.id===id?m:x);
+    const firstPayment = DB.payments
+      .filter(p=>p.memberId===id)
+      .sort((a,b)=>nd(a.startDate).localeCompare(nd(b.startDate)))[0];
+    if (firstPayment) {
+      firstPayment.memberName = m.name;
+      firstPayment.fee = fee;
+      firstPayment.startDate = sd;
+      firstPayment.expiry = ex;
+      firstPayment.duration = m.duration;
+      firstPayment.paymentMode = m.paymentMode;
+      firstPayment.note = m.note;
+      if (!firstPayment.paidOn) firstPayment.paidOn = sd;
+    }
     toast('✅ Member updated!');
   } else {
     DB.members.push(m);
