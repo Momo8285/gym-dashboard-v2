@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lord of the Gyms</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ── TOKENS ─────────────────────────────────────────── */
+:root {
+  --bg:       #080c10;
+  --s1:       #0f1419;
+  --s2:       #161d25;
+  --s3:       #1e2730;
+  --border:   #263040;
+  --border2:  #1a2230;
+  --gold:     #f5c842;
+  --gold2:    #e6a800;
+  --cyan:     #38e8ff;
+  --green:    #2dff9a;
+  --red:      #ff3d5a;
+  --orange:   #ff7a30;
+  --text:     #e8edf3;
+  --text2:    #7a8fa8;
+  --text3:    #3d5066;
+  --radius:   6px;
+  --F:        'Barlow Condensed',sans-serif;
+  --B:        'DM Sans',sans-serif;
+  --M:        'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--B);font-size:14px;line-height:1.6}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:var(--B)}
+input,select,textarea{font-family:var(--B)}
+
+/* ── SCROLLBAR ─────────────────────────────────────── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── LAYOUT ─────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;min-height:100vh}
+
+/* ── HEADER ─────────────────────────────────────────── */
+header{
+  background:var(--s1);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;
+  height:58px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+}
+.logo{
+  font-family:var(--F);
+  font-size:26px;
+  font-weight:800;
+  letter-spacing:3px;
+  color:var(--gold);
+  display:flex;align-items:center;gap:10px;
+}
+.logo-sub{font-size:11px;font-family:var(--B);font-weight:400;color:var(--text2);letter-spacing:0}
+.hdr-btns{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── NAV ─────────────────────────────────────────────── */
+nav{
+  background:var(--s1);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  overflow-x:auto;
+  padding:0 24px;
+}
+nav::-webkit-scrollbar{height:2px}
+.tab{
+  padding:14px 18px;
+  font-size:12px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.8px;
+  color:var(--text2);
+  border-bottom:2px solid transparent;
+  white-space:nowrap;
+  transition:all .2s;
+  cursor:pointer;
+}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* ── SYNC BAR ────────────────────────────────────────── */
+#sync-bar{
+  display:none;
+  background:var(--s2);
+  border-bottom:1px solid var(--border);
+  padding:7px 24px;
+  font-size:12px;
+  color:var(--text2);
+  align-items:center;
+  gap:10px;
+}
+#sync-bar.on{display:flex}
+.spin{width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── PAGE ─────────────────────────────────────────────── */
+.page{display:none;padding:24px;max-width:1440px;margin:0 auto;width:100%}
+.page.on{display:block}
+
+/* ── STAT GRID ───────────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.stat{
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px 20px;
+  position:relative;
+  overflow:hidden;
+}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat.gold::before{background:var(--gold)}
+.stat.green::before{background:var(--green)}
+.stat.red::before{background:var(--red)}
+.stat.cyan::before{background:var(--cyan)}
+.stat.orange::before{background:var(--orange)}
+.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:6px;font-weight:600}
+.stat-val{font-family:var(--F);font-size:32px;font-weight:700;line-height:1;letter-spacing:.5px}
+.stat-val.gold{color:var(--gold)}
+.stat-val.green{color:var(--green)}
+.stat-val.red{color:var(--red)}
+.stat-val.cyan{color:var(--cyan)}
+.stat-val.orange{color:var(--orange)}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:5px}
+.stat-modes{display:flex;gap:8px;margin-top:5px;flex-wrap:wrap}
+.mode-pill{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;font-family:var(--M)}
+.mode-pill.cash{background:rgba(245,200,66,.12);color:var(--gold);border:1px solid rgba(245,200,66,.25)}
+.mode-pill.upi{background:rgba(56,232,255,.12);color:var(--cyan);border:1px solid rgba(56,232,255,.25)}
+
+/* ── CARD ─────────────────────────────────────────────── */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.card-title{font-family:var(--F);font-size:18px;font-weight:700;letter-spacing:1px;color:var(--gold)}
+
+/* ── GRID ─────────────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+@media(max-width:900px){.g2,.g3{grid-template-columns:1fr}}
+
+/* ── FORM ─────────────────────────────────────────────── */
+.fg{margin-bottom:14px}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:700px){.fr2,.fr3{grid-template-columns:1fr}}
+label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:5px;font-weight:600}
+input,select,textarea{
+  width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--radius);
+  color:var(--text);padding:9px 12px;font-size:13px;outline:none;transition:border-color .2s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(245,200,66,.08)}
+input[readonly]{background:var(--s3);color:var(--text2);cursor:default}
+select option{background:var(--s2)}
+textarea{resize:vertical;min-height:70px}
+.manual-toggle{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0}
+.manual-toggle input{width:auto;cursor:pointer;accent-color:var(--gold)}
+
+/* ── BUTTONS ─────────────────────────────────────────── */
+.btn{padding:9px 18px;border-radius:var(--radius);border:none;font-size:12px;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:6px;letter-spacing:.3px;white-space:nowrap}
+.btn-gold{background:var(--gold);color:#000}
+.btn-gold:hover{background:var(--gold2);transform:translateY(-1px)}
+.btn-ghost{background:var(--s2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn-red{background:transparent;color:var(--red);border:1px solid var(--red);padding:5px 10px;font-size:11px}
+.btn-red:hover{background:var(--red);color:#fff}
+.btn-cyan{background:transparent;color:var(--cyan);border:1px solid var(--cyan);padding:5px 10px;font-size:11px}
+.btn-cyan:hover{background:var(--cyan);color:#000}
+.btn-sm{padding:6px 12px;font-size:11px}
+
+/* ── TABLE ───────────────────────────────────────────── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:9px 12px;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--border2);font-size:12px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.mono{font-family:var(--M)}
+
+/* ── BADGES ──────────────────────────────────────────── */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.b-active{background:rgba(45,255,154,.1);color:var(--green);border:1px solid rgba(45,255,154,.25)}
+.b-expiring{background:rgba(255,122,48,.1);color:var(--orange);border:1px solid rgba(255,122,48,.25)}
+.b-expired{background:rgba(255,61,90,.1);color:var(--red);border:1px solid rgba(255,61,90,.25)}
+.b-cash{background:rgba(245,200,66,.1);color:var(--gold);border:1px solid rgba(245,200,66,.2)}
+.b-upi{background:rgba(56,232,255,.1);color:var(--cyan);border:1px solid rgba(56,232,255,.2)}
+
+/* ── DAYS LEFT ───────────────────────────────────────── */
+.dl-ok{color:var(--green);font-weight:700;font-family:var(--M);font-size:11px}
+.dl-warn{color:var(--orange);font-weight:700;font-family:var(--M);font-size:11px}
+.dl-dead{color:var(--red);font-weight:700;font-family:var(--M);font-size:11px}
+
+/* ── SEARCH ──────────────────────────────────────────── */
+.search-wrap{position:relative}
+.search-wrap input{padding-left:32px;max-width:220px}
+.search-wrap::before{content:'⌕';position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none}
+
+/* ── ALERTS ──────────────────────────────────────────── */
+.alert{padding:10px 14px;border-radius:var(--radius);font-size:12px;display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+.alert-warn{background:rgba(255,122,48,.07);border:1px solid rgba(255,122,48,.2);color:var(--orange)}
+.alert-red{background:rgba(255,61,90,.07);border:1px solid rgba(255,61,90,.2);color:var(--red)}
+
+/* ── EMPTY ───────────────────────────────────────────── */
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-icon{font-size:32px;margin-bottom:10px}
+
+/* ── MODAL ───────────────────────────────────────────── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:16px}
+.overlay.on{display:flex}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:24px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.modal-title{font-family:var(--F);font-size:20px;font-weight:700;color:var(--gold)}
+.modal-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;line-height:1}
+.modal-close:hover{color:var(--text)}
+
+/* ── CHART ───────────────────────────────────────────── */
+.chart-wrap{display:flex;align-items:flex-end;gap:6px;height:120px;padding-bottom:20px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.chart-group{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:1px}
+.bar{width:100%;border-radius:2px 2px 0 0;min-height:2px;transition:height .4s cubic-bezier(.34,1.56,.64,1);position:relative}
+.bar:hover::after{content:attr(data-v);position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:9px;font-family:var(--M);background:var(--s3);padding:1px 5px;border-radius:3px;white-space:nowrap;color:var(--text);pointer-events:none}
+.bar.rev{background:var(--gold)}
+.bar.exp{background:var(--red);opacity:.7}
+.chart-lbl{flex:1;text-align:center;font-size:9px;color:var(--text3);font-family:var(--M)}
+
+/* ── TOAST ───────────────────────────────────────────── */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--gold);padding:11px 18px;border-radius:var(--radius);font-size:12px;z-index:999;transform:translateY(60px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);max-width:280px;pointer-events:none}
+#toast.on{transform:translateY(0);opacity:1}
+
+/* ── EXCEL MODAL ─────────────────────────────────────── */
+.preview-tbl{overflow-x:auto;max-height:260px;overflow-y:auto;font-size:11px}
+.preview-tbl table td{padding:5px 8px;font-size:11px}
+
+/* ── P/L COLORS ──────────────────────────────────────── */
+.pl+{color:var(--green);font-family:var(--M);font-weight:600}
+.pl-{color:var(--red);font-family:var(--M);font-weight:600}
+
+hr.div{border:none;border-top:1px solid var(--border);margin:14px 0}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    ⚡ LORD OF THE GYMS
+    <span class="logo-sub">MANAGEMENT SYSTEM</span>
+  </div>
+  <div class="hdr-btns">
+    <button class="btn btn-ghost btn-sm" onclick="exportJSON()">⬇ Export</button>
+    <button class="btn btn-ghost btn-sm" onclick="$('importJSON').click()">⬆ Import JSON</button>
+    <button class="btn btn-ghost btn-sm" onclick="$('importXLS').click()">📊 Import Excel</button>
+    <button class="btn btn-gold btn-sm" id="sync-btn" onclick="syncSheet()">🔄 Sync Sheet</button>
+    <input type="file" id="importJSON" accept=".json" style="display:none" onchange="onImportJSON(event)">
+    <input type="file" id="importXLS" accept=".xlsx,.xls,.csv" style="display:none" onchange="onImportXLS(event)">
+  </div>
+</header>
+
+<!-- SYNC BAR -->
+<div id="sync-bar">
+  <div class="spin"></div>
+  <span id="sync-msg">Syncing…</span>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="tab on" onclick="go('dashboard')">📊 Dashboard</div>
+  <div class="tab" onclick="go('members')">👥 Members</div>
+  <div class="tab" onclick="go('add-member')">➕ Add Member</div>
+  <div class="tab" onclick="go('renewals')">🔄 Renewals</div>
+  <div class="tab" onclick="go('expenses')">💸 Expenses</div>
+  <div class="tab" onclick="go('revenue')">📈 Revenue</div>
+</nav>
+
+<!-- ════════════════ DASHBOARD ════════════════ -->
+<div id="page-dashboard" class="page on">
+  <div id="dash-alerts"></div>
+  <div class="stat-grid" id="dash-stats"></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">6-MONTH OVERVIEW</div>
+        <div style="display:flex;gap:10px;font-size:11px;color:var(--text2)">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--gold);border-radius:2px;display:inline-block"></span>Revenue</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:var(--red);opacity:.7;border-radius:2px;display:inline-block"></span>Expense</span>
+        </div>
+      </div>
+      <div class="chart-wrap" id="chart"></div>
+      <div style="display:flex;justify-content:space-around" id="chart-labels"></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">⚠ EXPIRING SOON</div></div>
+      <div id="expiring-list"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">RECENT EXPENSES</div></div>
+    <div class="tbl-wrap" id="recent-exp"></div>
+  </div>
+</div>
+
+<!-- ════════════════ MEMBERS ════════════════ -->
+<div id="page-members" class="page">
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title">ALL MEMBERS</div>
+      <div class="search-wrap"><input type="text" id="member-q" placeholder="Search name, mobile, biometric…" oninput="renderMembers()"></div>
+    </div>
+    <div class="tbl-wrap" id="members-tbl"></div>
+  </div>
+</div>
+
+<!-- ════════════════ ADD MEMBER ════════════════ -->
+<div id="page-add-member" class="page">
+  <div class="card" style="max-width:860px;margin:0 auto">
+    <div class="card-hdr">
+      <div class="card-title" id="member-form-title">ADD NEW MEMBER</div>
+    </div>
+    <form id="member-form" onsubmit="saveMember(event)">
+      <div class="fg" style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+        <div id="mf-photo-preview" onclick="$('mf-photo-input').click()" style="width:84px;height:84px;border-radius:50%;background:var(--s2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;overflow:hidden;font-size:28px;color:var(--text3);transition:border-color .2s">📷</div>
+        <div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Member Photo</div>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="$('mf-photo-input').click()">📷 Upload</button>
+            <button type="button" class="btn btn-red" id="mf-photo-remove" style="display:none" onclick="removePhoto()">✕ Remove</button>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:5px">JPG/PNG, max 2MB</div>
+        </div>
+        <input type="file" id="mf-photo-input" accept="image/*" style="display:none" onchange="onPhotoSelect(event)">
+        <input type="hidden" id="mf-photo-data">
+      </div>
+      <div class="fr3">
+        <div class="fg"><label>Full Name *</label><input id="mf-name" required placeholder="e.g. Rahul Sharma"></div>
+        <div class="fg"><label>Age</label><input id="mf-age" type="number" min="5" max="100" placeholder="e.g. 25"></div>
+        <div class="fg"><label>Gender</label><select id="mf-gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+      </div>
+      <div class="fr3">
+        <div class="fg"><label>Mobile Number *</label><input id="mf-mobile" required placeholder="9876543210" maxlength="10"></div>
+        <div class="fg"><label>🔏 Biometric Serial No.</label><input id="mf-bio" placeholder="e.g. BIO-007"></div>
+        <div class="fg"><label>Payment Mode *</label><select id="mf-mode" required><option value="">Select</option><option value="Cash">Cash</option><option value="UPI">UPI</option></select></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label>Fees Amount (₹) *</label><input id="mf-fee" type="number" required min="0" placeholder="e.g. 1500"></div>
+        <div class="fg"><label>Address</label><input id="mf-address" placeholder="e.g. Sector 12, Noida"></div>
+      </div>
+      <div class="fr3">
+        <div class="fg"><label>Gym Start Date *</label><input id="mf-start" type="date" required onchange="autoExpiry()"></div>
+        <div class="fg"><label>Membership Duration</label><select id="mf-dur" onchange="autoExpiry()"><option value="1">1 Month</option><option value="2">2 Months</option><option value="3">3 Months</option><option value="6">6 Months</option><option value="12">12 Months</option></select></div>
+        <div class="fg">
+          <label style="display:flex;justify-content:space-between;align-items:center">
+            Expiry Date
+            <label class="manual-toggle"><input type="checkbox" id="mf-manual" onchange="toggleManual()"> Set manually</label>
+          </label>
+          <input id="mf-expiry" type="date" readonly>
+          <div id="mf-expiry-hint" style="font-size:10px;color:var(--text3);margin-top:3px">Auto-calculated. Check "Set manually" to override.</div>
+        </div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label>Email</label><input id="mf-email" type="email" placeholder="e.g. rahul@email.com"></div>
+        <div class="fg"><label>Emergency Contact</label><input id="mf-emergency" placeholder="e.g. 9876543210"></div>
+      </div>
+      <div class="fg"><label>Reminder Note</label><input id="mf-note" placeholder="e.g. Evening batch, follow up in 3 days"></div>
+      <input type="hidden" id="mf-edit-id">
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button type="submit" class="btn btn-gold" id="mf-submit">➕ Add Member</button>
+        <button type="button" class="btn btn-ghost" onclick="resetMemberForm()">✕ Reset</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ════════════════ RENEWALS ════════════════ -->
+<div id="page-renewals" class="page">
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">ADD RENEWAL</div></div>
+      <form onsubmit="saveRenewal(event)">
+        <div class="fg"><label>Select Member *</label>
+          <select id="rf-member" required onchange="prefillRenewal()"><option value="">— choose member —</option></select>
+        </div>
+        <div id="rf-info" style="display:none;margin-bottom:14px;padding:12px;background:var(--s2);border-radius:var(--radius);border:1px solid var(--border);font-size:12px"></div>
+        <div class="fr2">
+          <div class="fg"><label>New Start Date *</label><input id="rf-start" type="date" required onchange="calcRenewalExpiry()"></div>
+          <div class="fg"><label>Duration</label><select id="rf-dur" onchange="calcRenewalExpiry()"><option value="1">1 Month</option><option value="2">2 Months</option><option value="3">3 Months</option><option value="6">6 Months</option><option value="12">12 Months</option></select></div>
+        </div>
+        <div class="fr2">
+          <div class="fg"><label>Expiry Date (auto)</label><input id="rf-expiry" type="date" readonly></div>
+          <div class="fg"><label>Fee (₹) *</label><input id="rf-fee" type="number" required min="0" placeholder="e.g. 1500"></div>
+        </div>
+        <div class="fr3">
+          <div class="fg"><label>Payment Date *</label><input id="rf-paid" type="date" required></div>
+          <div class="fg"><label>Payment Mode *</label><select id="rf-mode" required><option value="">Select</option><option value="Cash">Cash</option><option value="UPI">UPI</option></select></div>
+          <div class="fg"><label>Note</label><input id="rf-note" placeholder="Optional"></div>
+        </div>
+        <button type="submit" class="btn btn-gold">🔄 Save Renewal</button>
+      </form>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">RENEWAL STATS</div></div>
+      <div id="renewal-stats"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title">PAYMENT HISTORY</div>
+      <div class="search-wrap"><input type="text" id="renewal-q" placeholder="Search member…" oninput="renderRenewals()"></div>
+    </div>
+    <div class="tbl-wrap" id="renewals-tbl"></div>
+  </div>
+</div>
+
+<!-- ════════════════ EXPENSES ════════════════ -->
+<div id="page-expenses" class="page">
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">ADD EXPENSE</div></div>
+      <form onsubmit="saveExpense(event)">
+        <div class="fr2">
+          <div class="fg"><label>Expense Type *</label>
+            <select id="ef-type" required>
+              <option value="">Select</option>
+              <option>Rent</option><option>Electricity</option><option>Equipment</option>
+              <option>Salary</option><option>Supplements</option><option>Maintenance</option>
+              <option>Internet / WiFi</option><option>Cleaning</option><option>Marketing</option>
+              <option>Miscellaneous</option>
+            </select>
+          </div>
+          <div class="fg"><label>Amount (₹) *</label><input id="ef-amount" type="number" required min="1" placeholder="e.g. 5000"></div>
+        </div>
+        <div class="fr2">
+          <div class="fg"><label>Date *</label><input id="ef-date" type="date" required></div>
+          <div class="fg"><label>Payment Mode *</label><select id="ef-mode" required><option value="">Select</option><option value="Cash">Cash</option><option value="UPI">UPI</option></select></div>
+        </div>
+        <div class="fg"><label>Note</label><input id="ef-note" placeholder="Optional details"></div>
+        <button type="submit" class="btn btn-gold">➕ Add Expense</button>
+      </form>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">EXPENSE SUMMARY</div></div>
+      <div id="exp-summary"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title">ALL EXPENSES</div>
+      <div class="search-wrap"><input type="text" id="exp-q" placeholder="Search type, note…" oninput="renderExpenses()"></div>
+    </div>
+    <div class="tbl-wrap" id="exp-tbl"></div>
+  </div>
+</div>
+
+<!-- ════════════════ REVENUE ════════════════ -->
+<div id="page-revenue" class="page">
+  <div class="stat-grid" id="rev-stats"></div>
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title">DAY / MONTH VIEW</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div><label style="margin-bottom:3px">Pick Date</label><input type="date" id="rev-day" onchange="renderRevDay()"></div>
+        <div><label style="margin-bottom:3px">Pick Month</label><input type="month" id="rev-month" onchange="renderRevMonth()"></div>
+      </div>
+    </div>
+    <div class="stat-grid" id="rev-day-stats" style="margin-bottom:16px"></div>
+    <div class="tbl-wrap" id="rev-day-tbl"></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">MONTHLY BREAKDOWN</div></div>
+    <div class="tbl-wrap" id="rev-monthly-tbl"></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">MEMBER-WISE FEES</div></div>
+    <div class="tbl-wrap" id="rev-member-tbl"></div>
+  </div>
+</div>
+
+<!-- ════ MEMBER DETAIL MODAL ════ -->
+<div class="overlay" id="member-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="mm-title"></div>
+      <button class="modal-close" onclick="closeModal('member-modal')">✕</button>
+    </div>
+    <div id="mm-body"></div>
+  </div>
+</div>
+
+<!-- ════ EXCEL PREVIEW MODAL ════ -->
+<div class="overlay" id="excel-modal">
+  <div class="modal" style="max-width:860px">
+    <div class="modal-hdr">
+      <div class="modal-title">📊 IMPORT EXCEL</div>
+      <button class="modal-close" onclick="closeModal('excel-modal')">✕</button>
+    </div>
+    <div id="excel-info" style="margin-bottom:12px;font-size:12px;color:var(--text2)"></div>
+    <div class="preview-tbl" id="excel-preview" style="margin-bottom:16px"></div>
+    <div id="excel-result" style="margin-bottom:12px"></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-gold" id="excel-confirm-btn" onclick="confirmXLS()">✅ Import</button>
+      <button class="btn btn-ghost" onclick="closeModal('excel-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+</div><!-- #app -->
+
+<script>
+// ═══════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════
+let DB = { members: [], payments: [], expenses: [] };
+
+function save()  { localStorage.setItem('lotg_v3', JSON.stringify(DB)); }
+function load()  {
+  try {
+    const d = JSON.parse(localStorage.getItem('lotg_v3') || '{}');
+    DB.members  = d.members  || [];
+    DB.payments = d.payments || [];
+    DB.expenses = d.expenses || [];
+    // Normalize all dates on load
+    const nd = s => s ? String(s).split('T')[0].split(' ')[0] : '';
+    DB.members.forEach(m => { m.startDate = nd(m.startDate); m.expiry = nd(m.expiry); });
+    DB.payments.forEach(p => { p.startDate = nd(p.startDate); p.expiry = nd(p.expiry); p.paidOn = nd(p.paidOn); });
+  } catch(e) { DB = { members:[], payments:[], expenses:[] }; }
+}
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const nd  = s  => s ? String(s).split('T')[0].split(' ')[0] : '';
+const today = () => new Date().toISOString().split('T')[0];
+
+function fmt(n) {
+  const x = Number(n)||0;
+  return '₹' + x.toLocaleString('en-IN', { minimumFractionDigits: x%1?2:0, maximumFractionDigits:2 });
+}
+function fmtX(n) {
+  return '₹' + (Number(n)||0).toLocaleString('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+
+function addMonths(d, n) {
+  const dt = new Date(d);
+  dt.setMonth(dt.getMonth() + n);
+  return dt.toISOString().split('T')[0];
+}
+
+function diffDays(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000) + 1;
+}
+
+function daysLeft(expiry) {
+  const diff = Math.ceil((new Date(expiry) - new Date(today())) / 86400000);
+  return diff;
+}
+
+function memberStatus(m) {
+  const eff = effectiveExpiry(m.id);
+  const d = daysLeft(eff || m.expiry);
+  if (d < 0)  return 'expired';
+  if (d <= 7) return 'expiring';
+  return 'active';
+}
+
+function daysLeftLabel(m) {
+  const eff = effectiveExpiry(m.id);
+  const d = daysLeft(eff || m.expiry);
+  if (d === 0)  return { txt:'Expires today', cls:'dl-warn' };
+  if (d < 0)    return { txt:`Expired ${Math.abs(d)}d ago`, cls:'dl-dead' };
+  if (d <= 7)   return { txt:`${d}d left ⚠`, cls:'dl-warn' };
+  if (d <= 30)  return { txt:`${d}d left`, cls:'dl-ok' };
+  const mo = Math.floor(d/30), dy = d%30;
+  return { txt:`${mo}m${dy?` ${dy}d`:''} left`, cls:'dl-ok' };
+}
+
+function effectiveExpiry(memberId) {
+  const ps = DB.payments.filter(p => p.memberId === memberId).sort((a,b)=>a.startDate.localeCompare(b.startDate));
+  return ps.length ? ps[ps.length-1].expiry : null;
+}
+
+function monthLabel(key) {
+  const [y, m] = key.split('-');
+  return new Date(+y, +m-1, 1).toLocaleString('default', {month:'short', year:'2-digit'});
+}
+
+// ═══════════════════════════════════════════════════
+// REVENUE ENGINE — payments are single source of truth
+// Pro-rate each payment across calendar months
+// ═══════════════════════════════════════════════════
+function proRate(startDate, expiry, fee, map) {
+  if (!fee || !startDate || !expiry) return;
+  const s = new Date(startDate), e = new Date(expiry);
+  const total = Math.max(1, diffDays(s, e));
+  let cur = new Date(s.getFullYear(), s.getMonth(), 1);
+  while (cur <= e) {
+    const yr = cur.getFullYear(), mo = cur.getMonth();
+    const key = `${yr}-${String(mo+1).padStart(2,'0')}`;
+    const ms = new Date(yr, mo, 1), me = new Date(yr, mo+1, 0);
+    const os = s > ms ? s : ms, oe = e < me ? e : me;
+    const days = Math.max(0, diffDays(os, oe));
+    if (days > 0) map[key] = (map[key]||0) + fee * days / total;
+    cur.setMonth(cur.getMonth()+1);
+  }
+}
+
+function monthlyRevenue() {
+  const map = {};
+  DB.payments.forEach(p => proRate(p.startDate, p.expiry, parseFloat(p.fee)||0, map));
+  return map;
+}
+
+function monthlyExpenses() {
+  const map = {};
+  DB.expenses.forEach(e => { const k = e.date.slice(0,7); map[k] = (map[k]||0) + (parseFloat(e.amount)||0); });
+  return map;
+}
+
+function allMonths() {
+  const s = new Set();
+  DB.payments.forEach(p => {
+    let c = new Date(new Date(p.startDate).getFullYear(), new Date(p.startDate).getMonth(), 1);
+    const e = new Date(p.expiry);
+    while (c <= e) { s.add(`${c.getFullYear()}-${String(c.getMonth()+1).padStart(2,'0')}`); c.setMonth(c.getMonth()+1); }
+  });
+  DB.expenses.forEach(e => s.add(e.date.slice(0,7)));
+  return [...s].sort();
+}
+
+function totalCollected() { return DB.payments.reduce((s,p)=>s+(parseFloat(p.fee)||0),0); }
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+function go(tab) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  event.currentTarget?.classList.add('on');
+  $(`page-${tab}`).classList.add('on');
+  if (tab==='dashboard') renderDashboard();
+  if (tab==='members')   renderMembers();
+  if (tab==='renewals')  renderRenewals();
+  if (tab==='expenses')  renderExpenses();
+  if (tab==='revenue')   renderRevenue();
+}
+
+// ═══════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════
+function toast(msg, col) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.style.borderLeftColor = col || 'var(--gold)';
+  t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'), 2800);
+}
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════
+function renderDashboard() {
+  const revMap = monthlyRevenue();
+  const expMap = monthlyExpenses();
+  const months = allMonths();
+  const nowKey = today().slice(0,7);
+  const curRev = revMap[nowKey]||0;
+  const curExp = expMap[nowKey]||0;
+  const curPL  = curRev - curExp;
+  const totRev = totalCollected();
+  const totExp = DB.expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const totPL  = totRev - totExp;
+
+  // Cash/UPI splits for this month
+  const nowPay = DB.payments.filter(p=>(p.paidOn||p.startDate||'').startsWith(nowKey));
+  const mCash = nowPay.filter(p=>(p.paymentMode||'').toLowerCase()==='cash').reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+  const mUPI  = nowPay.filter(p=>(p.paymentMode||'').toLowerCase()==='upi').reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+  const allCash = DB.payments.filter(p=>(p.paymentMode||'').toLowerCase()==='cash').reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+  const allUPI  = DB.payments.filter(p=>(p.paymentMode||'').toLowerCase()==='upi').reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+
+  const active   = DB.members.filter(m=>memberStatus(m)==='active').length;
+  const expiring = DB.members.filter(m=>memberStatus(m)==='expiring').length;
+  const expired  = DB.members.filter(m=>memberStatus(m)==='expired').length;
+
+  $('dash-stats').innerHTML = `
+    <div class="stat gold">
+      <div class="stat-lbl">Total Members</div>
+      <div class="stat-val gold">${DB.members.length}</div>
+      <div class="stat-sub">${active} active · ${expiring} expiring · ${expired} expired</div>
+    </div>
+    <div class="stat green">
+      <div class="stat-lbl">This Month Revenue</div>
+      <div class="stat-val green">${fmt(curRev)}</div>
+      <div class="stat-sub">Pro-rated by active days</div>
+    </div>
+    <div class="stat red">
+      <div class="stat-lbl">This Month Expense</div>
+      <div class="stat-val red">${fmt(curExp)}</div>
+      <div class="stat-modes">
+        <span class="mode-pill cash">💵 ${fmt(DB.expenses.filter(e=>e.date.startsWith(nowKey)&&(e.mode||'').toLowerCase()==='cash').reduce((s,e)=>s+(parseFloat(e.amount)||0),0))}</span>
+        <span class="mode-pill upi">📱 ${fmt(DB.expenses.filter(e=>e.date.startsWith(nowKey)&&(e.mode||'').toLowerCase()==='upi').reduce((s,e)=>s+(parseFloat(e.amount)||0),0))}</span>
+      </div>
+    </div>
+    <div class="stat ${curPL>=0?'green':'red'}">
+      <div class="stat-lbl">This Month P&amp;L</div>
+      <div class="stat-val ${curPL>=0?'green':'red'}">${fmt(curPL)}</div>
+      <div class="stat-sub">${curPL>=0?'▲ Profit':'▼ Loss'}</div>
+    </div>
+    <div class="stat cyan">
+      <div class="stat-lbl">Total Revenue (All Time)</div>
+      <div class="stat-val cyan">${fmt(totRev)}</div>
+      <div class="stat-modes">
+        <span class="mode-pill cash">💵 ${fmt(allCash)}</span>
+        <span class="mode-pill upi">📱 ${fmt(allUPI)}</span>
+      </div>
+    </div>
+    <div class="stat ${totPL>=0?'green':'red'}">
+      <div class="stat-lbl">Net P&amp;L (All Time)</div>
+      <div class="stat-val ${totPL>=0?'green':'red'}">${fmt(totPL)}</div>
+      <div class="stat-sub">${totPL>=0?'▲ Overall Profit':'▼ Overall Loss'}</div>
+    </div>`;
+
+  // Alerts
+  let alerts = '';
+  DB.members.filter(m=>memberStatus(m)==='expiring').forEach(m=>{
+    const dl = daysLeftLabel(m);
+    alerts += `<div class="alert alert-warn">⚠️ <strong>${m.name}</strong> — ${dl.txt} (expires ${effectiveExpiry(m.id)||m.expiry}) · 📞 ${m.mobile||'—'}</div>`;
+  });
+  DB.members.filter(m=>memberStatus(m)==='expired').forEach(m=>{
+    const dl = daysLeftLabel(m);
+    alerts += `<div class="alert alert-red">🔴 <strong>${m.name}</strong> — ${dl.txt} · 📞 ${m.mobile||'—'}</div>`;
+  });
+  $('dash-alerts').innerHTML = alerts;
+
+  // Chart (last 6 months)
+  const recent = months.slice(-6);
+  const maxV = Math.max(1,...recent.map(k=>Math.max(revMap[k]||0, expMap[k]||0)));
+  $('chart').innerHTML = recent.map(k=>{
+    const rh = Math.round(((revMap[k]||0)/maxV)*110);
+    const eh = Math.round(((expMap[k]||0)/maxV)*110);
+    return `<div class="chart-group">
+      <div style="display:flex;gap:2px;align-items:flex-end;width:100%;height:110px;justify-content:center">
+        <div class="bar rev" style="height:${rh}px;flex:1" data-v="${fmt(revMap[k]||0)}"></div>
+        <div class="bar exp" style="height:${eh}px;flex:1" data-v="${fmt(expMap[k]||0)}"></div>
+      </div></div>`;
+  }).join('');
+  $('chart-labels').innerHTML = recent.map(k=>`<div class="chart-lbl">${monthLabel(k)}</div>`).join('');
+
+  // Expiring list
+  const expList = DB.members.filter(m=>['expiring','expired'].includes(memberStatus(m)));
+  $('expiring-list').innerHTML = expList.length ? expList.map(m=>{
+    const dl = daysLeftLabel(m), eff = effectiveExpiry(m.id)||m.expiry;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border2)">
+      <div><div style="font-weight:500;font-size:13px">${m.name}</div><div style="font-size:11px;color:var(--text3)">${m.mobile||'—'}</div></div>
+      <div style="text-align:right"><div class="mono" style="font-size:11px;color:var(--text2)">${eff}</div><div class="${dl.cls}" style="margin-top:2px">${dl.txt}</div></div>
+    </div>`;
+  }).join('') : '<div class="empty"><div class="empty-icon">✅</div><div>No expiring memberships</div></div>';
+
+  // Recent expenses
+  const re = [...DB.expenses].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  $('recent-exp').innerHTML = re.length ? `<table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Mode</th><th>Note</th></tr></thead><tbody>
+    ${re.map(e=>`<tr><td class="mono">${e.date}</td><td>${e.type}</td><td class="mono">${fmt(e.amount)}</td><td><span class="badge b-${(e.mode||'cash').toLowerCase()}">${e.mode}</span></td><td style="color:var(--text2)">${e.note||'—'}</td></tr>`).join('')}
+  </tbody></table>` : '<div class="empty"><div>No expenses yet</div></div>';
+}
+
+// ═══════════════════════════════════════════════════
+// MEMBERS TABLE
+// ═══════════════════════════════════════════════════
+function renderMembers() {
+  const q = ($('member-q')?.value||'').toLowerCase();
+  const list = DB.members.filter(m=>
+    !q || m.name.toLowerCase().includes(q) || (m.mobile||'').includes(q) || (m.biometric||'').toLowerCase().includes(q)
+  );
+  if (!list.length) { $('members-tbl').innerHTML='<div class="empty"><div class="empty-icon">👥</div><div>No members found</div></div>'; return; }
+  $('members-tbl').innerHTML = `<table><thead><tr>
+    <th></th><th>#</th><th>Biometric</th><th>Name</th><th>Age</th><th>Mobile</th><th>Fee</th><th>Mode</th>
+    <th>Start</th><th>Expiry</th><th>Time Left</th><th>Status</th><th>Actions</th>
+  </tr></thead><tbody>
+  ${list.map((m,i)=>{
+    const st = memberStatus(m), dl = daysLeftLabel(m), eff = effectiveExpiry(m.id)||m.expiry;
+    const payCount = DB.payments.filter(p=>p.memberId===m.id).length;
+    const avatar = m.photo
+      ? `<img src="${m.photo}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;cursor:pointer" onclick="showMemberDetail('${m.id}')">`
+      : `<div style="width:32px;height:32px;border-radius:50%;background:var(--s2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text3);cursor:pointer" onclick="showMemberDetail('${m.id}')">${m.name.charAt(0).toUpperCase()}</div>`;
+    return `<tr>
+      <td>${avatar}</td>
+      <td class="mono" style="color:var(--text3)">${i+1}</td>
+      <td class="mono" style="color:var(--cyan)">${m.biometric||'—'}</td>
+      <td><strong style="cursor:pointer;color:var(--gold)" onclick="showMemberDetail('${m.id}')">${m.name}</strong></td>
+      <td>${m.age||'—'}</td>
+      <td class="mono">${m.mobile||'—'}</td>
+      <td class="mono">${fmt(m.fee)}</td>
+      <td><span class="badge b-${(m.paymentMode||'cash').toLowerCase()}">${m.paymentMode||'—'}</span></td>
+      <td class="mono">${m.startDate||'—'}</td>
+      <td class="mono">${eff}</td>
+      <td><span class="${dl.cls}">${dl.txt}</span></td>
+      <td><span class="badge b-${st}">${st}</span></td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-cyan btn-sm" onclick="quickRenew('${m.id}')" title="Renew">🔄 ${payCount}</button>
+        <button class="btn btn-ghost btn-sm" onclick="editMember('${m.id}')">✏️</button>
+        <button class="btn btn-red" onclick="deleteMember('${m.id}')">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+// ═══════════════════════════════════════════════════
+// MEMBER DETAIL MODAL
+// ═══════════════════════════════════════════════════
+function showMemberDetail(id) {
+  const m = DB.members.find(x=>x.id===id); if(!m) return;
+  const st = memberStatus(m), dl = daysLeftLabel(m), eff = effectiveExpiry(m.id)||m.expiry;
+  const ps = DB.payments.filter(p=>p.memberId===id).sort((a,b)=>a.startDate.localeCompare(b.startDate));
+  const total = ps.reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+  $('mm-title').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px">
+      ${m.photo
+        ? `<img src="${m.photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)">`
+        : `<div style="width:48px;height:48px;border-radius:50%;background:var(--s2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text3)">${m.name.charAt(0).toUpperCase()}</div>`}
+      <span>${m.name}</span>
+    </div>`;
+  $('mm-body').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="padding:12px;background:var(--s2);border-radius:var(--radius);border:1px solid var(--border)">
+        <div class="stat-lbl">Total Paid</div>
+        <div style="font-family:var(--F);font-size:24px;color:var(--gold)">${fmt(total)}</div>
+      </div>
+      <div style="padding:12px;background:var(--s2);border-radius:var(--radius);border:1px solid var(--border)">
+        <div class="stat-lbl">Payments</div>
+        <div style="font-family:var(--F);font-size:24px;color:var(--cyan)">${ps.length}</div>
+      </div>
+      <div style="padding:12px;background:var(--s2);border-radius:var(--radius);border:1px solid var(--border)">
+        <div class="stat-lbl">Status</div>
+        <div style="font-family:var(--F);font-size:20px;color:var(--${st==='active'?'green':st==='expiring'?'orange':'red'})">${st.toUpperCase()}</div>
+        <div class="${dl.cls}" style="font-size:11px">${dl.txt}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin-bottom:14px">
+      ${[['Biometric',m.biometric||'—'],['Age',m.age||'—'],['Gender',m.gender||'—'],['Mobile',m.mobile||'—'],
+         ['Email',m.email||'—'],['Emergency',m.emergency||'—'],['Address',m.address||'—'],
+         ['Valid Until',eff],['Note',m.note||'—']].map(([l,v])=>`
+        <div style="padding:7px 10px;background:var(--s2);border-radius:4px">
+          <div style="color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px;margin-bottom:2px">${l}</div>
+          <div style="color:var(--text);font-family:${l==='Mobile'||l==='Biometric'||l==='Valid Until'?'var(--M)':'inherit'}">${v}</div>
+        </div>`).join('')}
+    </div>
+    <div style="font-family:var(--F);font-size:15px;color:var(--gold);letter-spacing:1px;margin-bottom:8px">PAYMENT HISTORY</div>
+    ${ps.length ? `<table><thead><tr><th>#</th><th>Paid On</th><th>Period</th><th>Duration</th><th>Fee</th><th>Mode</th><th>Note</th><th></th></tr></thead><tbody>
+    ${ps.map((p,i)=>`<tr>
+      <td class="mono" style="color:var(--text3)">${i+1}</td>
+      <td class="mono">${p.paidOn||p.startDate}</td>
+      <td class="mono" style="font-size:11px">${p.startDate} → ${p.expiry}</td>
+      <td>${p.duration||1}mo</td>
+      <td class="mono" style="color:var(--gold)">${fmt(p.fee)}</td>
+      <td><span class="badge b-${(p.paymentMode||'cash').toLowerCase()}">${p.paymentMode||'—'}</span></td>
+      <td style="color:var(--text2);font-size:11px">${p.note||'—'}</td>
+      <td><button class="btn btn-red" onclick="deletePayment('${p.id}','${id}')">🗑</button></td>
+    </tr>`).join('')}
+    <tr style="border-top:1px solid var(--border)"><td colspan="4" style="font-weight:600">TOTAL</td><td class="mono" style="color:var(--gold);font-weight:700">${fmt(total)}</td><td colspan="3"></td></tr>
+    </tbody></table>` : '<div class="empty"><div>No payment records</div></div>'}
+    <div style="margin-top:14px">
+      <button class="btn btn-gold btn-sm" onclick="closeModal('member-modal');quickRenew('${id}')">🔄 Add Renewal</button>
+    </div>`;
+  openModal('member-modal');
+}
+
+function deletePayment(pid, mid) {
+  if (!confirm('Delete this payment?')) return;
+  DB.payments = DB.payments.filter(p=>p.id!==pid);
+  const remaining = DB.payments.filter(p=>p.memberId===mid).sort((a,b)=>a.startDate.localeCompare(b.startDate));
+  const m = DB.members.find(x=>x.id===mid);
+  if (m && remaining.length) { const l=remaining[remaining.length-1]; m.startDate=l.startDate; m.expiry=l.expiry; m.fee=l.fee; m.duration=l.duration; }
+  save(); showMemberDetail(mid); toast('Payment deleted','var(--red)');
+}
+
+// ═══════════════════════════════════════════════════
+// ADD / EDIT MEMBER FORM
+// ═══════════════════════════════════════════════════
+function autoExpiry() {
+  if ($('mf-manual').checked) return;
+  const s = $('mf-start').value, d = parseInt($('mf-dur').value)||1;
+  if (s) $('mf-expiry').value = addMonths(s, d);
+}
+
+function toggleManual() {
+  const m = $('mf-manual').checked;
+  $('mf-expiry').readOnly = !m;
+  $('mf-expiry').style.background = m ? '' : '';
+  $('mf-expiry-hint').textContent = m ? '✏️ Manual mode — pick any date.' : 'Auto-calculated from start date + duration.';
+  if (!m) autoExpiry();
+}
+
+function onPhotoSelect(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (!f.type.startsWith('image/')) { toast('❌ Please select an image file', 'var(--red)'); return; }
+  if (f.size > 2*1024*1024) { toast('❌ Image must be under 2MB', 'var(--red)'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    // Resize/compress via canvas before storing
+    const img = new Image();
+    img.onload = () => {
+      const size = 300; // max dimension
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > size) { h = h*size/w; w = size; } }
+      else { if (h > size) { w = w*size/h; h = size; } }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      $('mf-photo-data').value = dataUrl;
+      $('mf-photo-preview').innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
+      $('mf-photo-preview').style.border = '2px solid var(--gold)';
+      $('mf-photo-remove').style.display = 'inline-flex';
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(f);
+}
+
+function removePhoto() {
+  $('mf-photo-data').value = '';
+  $('mf-photo-preview').innerHTML = '📷';
+  $('mf-photo-preview').style.border = '2px dashed var(--border)';
+  $('mf-photo-remove').style.display = 'none';
+  $('mf-photo-input').value = '';
+}
+
+function saveMember(e) {
+  e.preventDefault();
+  const editId = $('mf-edit-id').value;
+  const id = editId || uid();
+  const sd = nd($('mf-start').value);
+  const ex = nd($('mf-expiry').value);
+  const fee = parseFloat($('mf-fee').value)||0;
+  const m = {
+    id, name:$('mf-name').value.trim(), age:$('mf-age').value, gender:$('mf-gender').value,
+    mobile:$('mf-mobile').value.trim(), biometric:$('mf-bio').value.trim(),
+    paymentMode:$('mf-mode').value, fee, address:$('mf-address').value.trim(),
+    startDate:sd, duration:parseInt($('mf-dur').value)||1, expiry:ex,
+    email:$('mf-email').value.trim(), emergency:$('mf-emergency').value.trim(),
+    note:$('mf-note').value.trim(), photo:$('mf-photo-data').value || ''
+  };
+  if (editId) {
+    DB.members = DB.members.map(x=>x.id===id?m:x);
+    toast('✅ Member updated!');
+  } else {
+    DB.members.push(m);
+    // Initial payment record
+    if (!DB.payments.some(p=>p.memberId===id)) {
+      DB.payments.push({ id:uid(), memberId:id, memberName:m.name, fee, startDate:sd, expiry:ex,
+        duration:m.duration, paymentMode:m.paymentMode, note:m.note, paidOn:sd, source:'manual' });
+    }
+    toast('✅ Member added!');
+  }
+  save(); resetMemberForm();
+}
+
+function resetMemberForm() {
+  $('member-form').reset();
+  $('mf-edit-id').value = '';
+  removePhoto();
+  $('mf-start').value = today();
+  $('mf-dur').value = '1';
+  $('mf-manual').checked = false;
+  toggleManual();
+  $('member-form-title').textContent = 'ADD NEW MEMBER';
+  $('mf-submit').textContent = '➕ Add Member';
+}
+
+function editMember(id) {
+  const m = DB.members.find(x=>x.id===id); if(!m) return;
+  $('mf-edit-id').value = id;
+  $('mf-name').value = m.name||'';
+  $('mf-age').value  = m.age||'';
+  $('mf-gender').value = m.gender||'';
+  $('mf-mobile').value = m.mobile||'';
+  $('mf-bio').value    = m.biometric||'';
+  $('mf-mode').value   = m.paymentMode||'';
+  $('mf-fee').value    = m.fee||'';
+  $('mf-address').value= m.address||'';
+  $('mf-start').value  = m.startDate||'';
+  $('mf-dur').value    = m.duration||1;
+  $('mf-expiry').value = m.expiry||'';
+  $('mf-email').value  = m.email||'';
+  $('mf-emergency').value = m.emergency||'';
+  $('mf-note').value   = m.note||'';
+  if (m.photo) {
+    $('mf-photo-data').value = m.photo;
+    $('mf-photo-preview').innerHTML = `<img src="${m.photo}" style="width:100%;height:100%;object-fit:cover">`;
+    $('mf-photo-preview').style.border = '2px solid var(--gold)';
+    $('mf-photo-remove').style.display = 'inline-flex';
+  } else {
+    removePhoto();
+  }
+  $('member-form-title').textContent = 'EDIT MEMBER';
+  $('mf-submit').textContent = '💾 Update Member';
+  // switch tab
+  document.querySelectorAll('.tab')[2].click();
+}
+
+function deleteMember(id) {
+  if (!confirm('Delete this member? All their payment records will also be removed.')) return;
+  DB.members  = DB.members.filter(m=>m.id!==id);
+  DB.payments = DB.payments.filter(p=>p.memberId!==id);
+  save(); renderMembers(); toast('Member deleted','var(--red)');
+}
+
+function quickRenew(id) {
+  document.querySelectorAll('.tab')[3].click();
+  setTimeout(()=>{ $('rf-member').value=id; prefillRenewal(); }, 60);
+}
+
+// ═══════════════════════════════════════════════════
+// RENEWALS
+// ═══════════════════════════════════════════════════
+function renderRenewals() {
+  // Populate member dropdown
+  const sel = $('rf-member'), cur = sel.value;
+  sel.innerHTML = '<option value="">— choose member —</option>' +
+    [...DB.members].sort((a,b)=>a.name.localeCompare(b.name)).map(m=>
+      `<option value="${m.id}" ${m.id===cur?'selected':''}>${m.name}${m.biometric?' ('+m.biometric+')':''}</option>`
+    ).join('');
+  if (cur) prefillRenewal();
+
+  // Stats
+  const total = DB.payments.reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+  const nowKey = today().slice(0,7);
+  const mth = DB.payments.filter(p=>(p.paidOn||p.startDate||'').startsWith(nowKey)).reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+  $('renewal-stats').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="padding:14px;background:var(--s2);border-radius:var(--radius);border:1px solid var(--border)">
+        <div class="stat-lbl">All Payments</div>
+        <div style="font-family:var(--F);font-size:28px;color:var(--cyan)">${DB.payments.length}</div>
+        <div style="font-size:11px;color:var(--text3)">${DB.members.length} members</div>
+      </div>
+      <div style="padding:14px;background:var(--s2);border-radius:var(--radius);border:1px solid var(--border)">
+        <div class="stat-lbl">Total Collected</div>
+        <div style="font-family:var(--F);font-size:24px;color:var(--gold)">${fmt(total)}</div>
+        <div style="font-size:11px;color:var(--text3)">This month: ${fmt(mth)}</div>
+      </div>
+    </div>`;
+
+  // Table
+  const q = ($('renewal-q')?.value||'').toLowerCase();
+  const list = [...DB.payments].filter(p=>!q||p.memberName.toLowerCase().includes(q)).sort((a,b)=>b.paidOn.localeCompare(a.paidOn));
+  const m = DB.members.find(x=>x.id===$('rf-member').value);
+  if (!list.length) { $('renewals-tbl').innerHTML='<div class="empty"><div class="empty-icon">🔄</div><div>No payment records yet</div></div>'; return; }
+  $('renewals-tbl').innerHTML = `<table><thead><tr>
+    <th>#</th><th>Member</th><th>Biometric</th><th>Paid On</th><th>Period</th><th>Duration</th><th>Fee</th><th>Mode</th><th>Note</th><th>Actions</th>
+  </tr></thead><tbody>
+  ${list.map((p,i)=>{
+    const mem = DB.members.find(x=>x.id===p.memberId);
+    return `<tr>
+      <td class="mono" style="color:var(--text3)">${i+1}</td>
+      <td><strong style="cursor:pointer;color:var(--gold)" onclick="showMemberDetail('${p.memberId}')">${p.memberName}</strong></td>
+      <td class="mono" style="color:var(--cyan)">${mem?.biometric||'—'}</td>
+      <td class="mono">${p.paidOn||p.startDate}</td>
+      <td class="mono" style="font-size:11px">${p.startDate} → ${p.expiry}</td>
+      <td>${p.duration||1}mo</td>
+      <td class="mono" style="color:var(--gold);font-weight:600">${fmt(p.fee)}</td>
+      <td><span class="badge b-${(p.paymentMode||'cash').toLowerCase()}">${p.paymentMode||'—'}</span></td>
+      <td style="color:var(--text2);font-size:11px">${p.note||'—'}</td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick="showMemberDetail('${p.memberId}')">📋</button>
+        <button class="btn btn-red" onclick="deletePayment('${p.id}','${p.memberId}')">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+function prefillRenewal() {
+  const id = $('rf-member').value;
+  const m = DB.members.find(x=>x.id===id);
+  const info = $('rf-info');
+  if (!m) { info.style.display='none'; return; }
+  const eff = effectiveExpiry(id)||m.expiry;
+  const nxt = new Date(eff); nxt.setDate(nxt.getDate()+1);
+  $('rf-start').value = nxt.toISOString().split('T')[0];
+  $('rf-paid').value  = today();
+  $('rf-fee').value   = m.fee||'';
+  $('rf-mode').value  = m.paymentMode||'';
+  $('rf-dur').value   = m.duration||1;
+  calcRenewalExpiry();
+  const dl = daysLeftLabel(m);
+  info.style.display='block';
+  info.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><div style="font-weight:600;font-size:13px">${m.name}</div><div style="color:var(--text3);font-size:11px">📞 ${m.mobile||'—'} · 🔏 ${m.biometric||'—'}</div></div>
+    <div style="text-align:right"><div class="mono" style="font-size:11px;color:var(--text2)">Current expiry: ${eff}</div><div class="${dl.cls}" style="font-size:12px">${dl.txt}</div></div>
+  </div>`;
+}
+
+function calcRenewalExpiry() {
+  const s=$('rf-start').value, d=parseInt($('rf-dur').value)||1;
+  if(s) $('rf-expiry').value = addMonths(s,d);
+}
+
+function saveRenewal(e) {
+  e.preventDefault();
+  const id=$('rf-member').value, m=DB.members.find(x=>x.id===id); if(!m) return;
+  const sd=nd($('rf-start').value), ex=nd($('rf-expiry').value);
+  const fee=parseFloat($('rf-fee').value)||0;
+  const mode=$('rf-mode').value;
+  // Check duplicate
+  if (DB.payments.some(p=>p.memberId===id&&nd(p.startDate)===sd)) {
+    toast('⚠ A payment for this member on '+sd+' already exists','var(--orange)'); return;
+  }
+  const paidOn = nd($('rf-paid').value) || today();
+  DB.payments.push({ id:uid(), memberId:id, memberName:m.name, fee, startDate:sd, expiry:ex,
+    duration:parseInt($('rf-dur').value)||1, paymentMode:mode, note:$('rf-note').value.trim(), paidOn:paidOn, source:'manual' });
+  // Update member period
+  if (!m.expiry||sd>=m.startDate) { m.startDate=sd; m.expiry=ex; m.fee=fee; m.duration=parseInt($('rf-dur').value)||1; m.paymentMode=mode; }
+  save(); renderRenewals(); renderDashboard();
+  toast(`✅ Renewal saved for ${m.name}`);
+  $('rf-note').value='';
+  $('rf-paid').value=today();
+}
+
+// ═══════════════════════════════════════════════════
+// EXPENSES
+// ═══════════════════════════════════════════════════
+function saveExpense(e) {
+  e.preventDefault();
+  DB.expenses.push({ id:uid(), type:$('ef-type').value, amount:parseFloat($('ef-amount').value)||0,
+    date:nd($('ef-date').value), mode:$('ef-mode').value, note:$('ef-note').value.trim() });
+  save(); renderExpenses(); toast('✅ Expense added!');
+  $('ef-type').value=''; $('ef-amount').value=''; $('ef-mode').value=''; $('ef-note').value='';
+  $('ef-date').value=today();
+}
+
+function deleteExpense(id) {
+  if(!confirm('Delete this expense?')) return;
+  DB.expenses=DB.expenses.filter(e=>e.id!==id);
+  save(); renderExpenses(); toast('Expense deleted','var(--red)');
+}
+
+function renderExpenses() {
+  const total=DB.expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const cash=DB.expenses.filter(e=>(e.mode||'').toLowerCase()==='cash').reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const upi=total-cash;
+  const byType={};
+  DB.expenses.forEach(e=>{ byType[e.type]=(byType[e.type]||{cash:0,upi:0}); if((e.mode||'').toLowerCase()==='upi') byType[e.type].upi+=parseFloat(e.amount)||0; else byType[e.type].cash+=parseFloat(e.amount)||0; });
+
+  $('exp-summary').innerHTML = DB.expenses.length ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="padding:12px;background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.2);border-radius:var(--radius)">
+        <div class="stat-lbl">💵 Cash Out</div>
+        <div style="font-family:var(--F);font-size:24px;color:var(--gold)">${fmt(cash)}</div>
+        <div style="font-size:10px;color:var(--text3)">${total?Math.round(cash/total*100):0}% of total</div>
+      </div>
+      <div style="padding:12px;background:rgba(56,232,255,.07);border:1px solid rgba(56,232,255,.2);border-radius:var(--radius)">
+        <div class="stat-lbl">📱 UPI Out</div>
+        <div style="font-family:var(--F);font-size:24px;color:var(--cyan)">${fmt(upi)}</div>
+        <div style="font-size:10px;color:var(--text3)">${total?Math.round(upi/total*100):0}% of total</div>
+      </div>
+    </div>
+    ${Object.entries(byType).sort((a,b)=>(b[1].cash+b[1].upi)-(a[1].cash+a[1].upi)).map(([t,v])=>{
+      const s=v.cash+v.upi;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border2)">
+        <span style="color:var(--text2);font-size:12px">${t}</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          ${v.cash?`<span class="mode-pill cash">💵 ${fmt(v.cash)}</span>`:''}
+          ${v.upi?`<span class="mode-pill upi">📱 ${fmt(v.upi)}</span>`:''}
+          <span class="mono" style="font-size:12px">${fmt(s)}</span>
+          <span style="font-size:10px;color:var(--text3);min-width:28px;text-align:right">${Math.round(s/total*100)}%</span>
+        </div>
+      </div>`;
+    }).join('')}
+    <div style="display:flex;justify-content:space-between;padding:9px 0;font-weight:600">
+      <span>Total</span><div style="display:flex;gap:8px;align-items:center">
+        <span class="mode-pill cash">💵 ${fmt(cash)}</span>
+        <span class="mode-pill upi">📱 ${fmt(upi)}</span>
+        <span class="mono" style="color:var(--red)">${fmt(total)}</span>
+      </div>
+    </div>` : '<div class="empty"><div>No expenses yet</div></div>';
+
+  const q=($('exp-q')?.value||'').toLowerCase();
+  const list=[...DB.expenses].filter(e=>!q||e.type.toLowerCase().includes(q)||(e.note||'').toLowerCase().includes(q)).sort((a,b)=>b.date.localeCompare(a.date));
+  $('exp-tbl').innerHTML=list.length?`<table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Mode</th><th>Note</th><th></th></tr></thead><tbody>
+  ${list.map(e=>`<tr><td class="mono">${e.date}</td><td>${e.type}</td><td class="mono">${fmt(e.amount)}</td>
+    <td><span class="badge b-${(e.mode||'cash').toLowerCase()}">${e.mode}</span></td>
+    <td style="color:var(--text2);font-size:11px">${e.note||'—'}</td>
+    <td><button class="btn btn-red" onclick="deleteExpense('${e.id}')">🗑</button></td>
+  </tr>`).join('')}</tbody></table>`:'<div class="empty"><div>No expenses found</div></div>';
+}
+
+// ═══════════════════════════════════════════════════
+// REVENUE
+// ═══════════════════════════════════════════════════
+function renderRevenue() {
+  const revMap=monthlyRevenue(), expMap=monthlyExpenses(), months=allMonths();
+  const totRev=totalCollected(), totExp=DB.expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0), netPL=totRev-totExp;
+  const allCash=DB.payments.filter(p=>(p.paymentMode||'').toLowerCase()==='cash').reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+  const allUPI =DB.payments.filter(p=>(p.paymentMode||'').toLowerCase()==='upi').reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+  const eCash=DB.expenses.filter(e=>(e.mode||'').toLowerCase()==='cash').reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const eUPI=DB.expenses.filter(e=>(e.mode||'').toLowerCase()==='upi').reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+
+  $('rev-stats').innerHTML=`
+    <div class="stat green">
+      <div class="stat-lbl">Total Collected</div>
+      <div class="stat-val green">${fmt(totRev)}</div>
+      <div class="stat-modes"><span class="mode-pill cash">💵 ${fmt(allCash)}</span><span class="mode-pill upi">📱 ${fmt(allUPI)}</span></div>
+    </div>
+    <div class="stat red">
+      <div class="stat-lbl">Total Expenses</div>
+      <div class="stat-val red">${fmt(totExp)}</div>
+      <div class="stat-modes"><span class="mode-pill cash">💵 ${fmt(eCash)}</span><span class="mode-pill upi">📱 ${fmt(eUPI)}</span></div>
+    </div>
+    <div class="stat ${netPL>=0?'green':'red'}">
+      <div class="stat-lbl">Net P&amp;L (All Time)</div>
+      <div class="stat-val ${netPL>=0?'green':'red'}">${fmt(netPL)}</div>
+      <div class="stat-sub">${netPL>=0?'▲ In Profit':'▼ In Loss'}</div>
+    </div>
+    <div class="stat cyan">
+      <div class="stat-lbl">Active Members</div>
+      <div class="stat-val cyan">${DB.members.filter(m=>memberStatus(m)==='active').length}</div>
+      <div class="stat-sub">${DB.payments.length} total payments</div>
+    </div>`;
+
+  // Set default pickers
+  if (!$('rev-day').value)   $('rev-day').value=today();
+  if (!$('rev-month').value) $('rev-month').value=today().slice(0,7);
+  renderRevDay();
+
+  // Monthly table
+  if (!months.length) { $('rev-monthly-tbl').innerHTML='<div class="empty"><div>No data yet</div></div>'; }
+  else {
+    $('rev-monthly-tbl').innerHTML=`<table><thead><tr>
+      <th>Month</th><th>Fees Collected</th><th>💵 Cash In</th><th>📱 UPI In</th>
+      <th>Revenue (Pro-rated)</th><th>💵 Cash Out</th><th>📱 UPI Out</th><th>Expenses</th><th>P&L</th><th>Active</th>
+    </tr></thead><tbody>
+    ${[...months].reverse().map(k=>{
+      const rev=revMap[k]||0, exp=expMap[k]||0, pl=rev-exp;
+      const mPay=DB.payments.filter(p=>(p.paidOn||p.startDate||'').startsWith(k));
+      const coll=mPay.reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+      const cIn=mPay.filter(p=>(p.paymentMode||'').toLowerCase()==='cash').reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+      const uIn=mPay.filter(p=>(p.paymentMode||'').toLowerCase()==='upi').reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+      const mExp=DB.expenses.filter(e=>e.date.startsWith(k));
+      const cOut=mExp.filter(e=>(e.mode||'').toLowerCase()==='cash').reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+      const uOut=mExp.filter(e=>(e.mode||'').toLowerCase()==='upi').reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+      const active=DB.members.filter(m=>m.startDate<=k+'-31'&&m.expiry>=k+'-01').length;
+      return `<tr>
+        <td style="font-weight:600">${monthLabel(k)}</td>
+        <td class="mono" style="color:var(--gold)">${coll>0?fmtX(coll):'—'}<span style="color:var(--text3);font-size:10px;margin-left:4px">${mPay.length>0?'('+mPay.length+')':''}</span></td>
+        <td class="mono" style="color:var(--gold);font-size:11px">${cIn>0?fmt(cIn):'—'}</td>
+        <td class="mono" style="color:var(--cyan);font-size:11px">${uIn>0?fmt(uIn):'—'}</td>
+        <td class="mono" style="color:var(--green)">${fmtX(rev)}</td>
+        <td class="mono" style="color:var(--gold);font-size:11px">${cOut>0?fmt(cOut):'—'}</td>
+        <td class="mono" style="color:var(--cyan);font-size:11px">${uOut>0?fmt(uOut):'—'}</td>
+        <td class="mono" style="color:var(--red)">${fmtX(exp)}</td>
+        <td class="mono ${pl>=0?'':''}"><span style="color:${pl>=0?'var(--green)':'var(--red)'};font-weight:600">${pl>=0?'+':''}${fmtX(pl)}</span></td>
+        <td>${active}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+  }
+
+  // Member-wise
+  const grand=totalCollected();
+  $('rev-member-tbl').innerHTML=DB.members.length?`<table><thead><tr>
+    <th>#</th><th>Member</th><th>Biometric</th><th>Fee Collected</th><th>Joined Month</th><th>Duration</th><th>Daily Rate</th><th>Start</th><th>Expiry</th><th>Status</th>
+  </tr></thead><tbody>
+  ${DB.members.map((m,i)=>{
+    const s=new Date(m.startDate),e=new Date(m.expiry);
+    const td=Math.max(1,diffDays(s,e)), daily=(parseFloat(m.fee)||0)/td;
+    const st=memberStatus(m);
+    return `<tr>
+      <td class="mono" style="color:var(--text3)">${i+1}</td>
+      <td><strong>${m.name}</strong></td>
+      <td class="mono" style="color:var(--cyan)">${m.biometric||'—'}</td>
+      <td class="mono" style="color:var(--gold);font-weight:600">${fmtX(parseFloat(m.fee)||0)}</td>
+      <td style="color:var(--text2)">${m.startDate?monthLabel(m.startDate.slice(0,7)):'—'}</td>
+      <td>${m.duration||1}mo</td>
+      <td class="mono" style="color:var(--text2)">${fmtX(daily)}/day</td>
+      <td class="mono">${m.startDate||'—'}</td>
+      <td class="mono">${m.expiry||'—'}</td>
+      <td><span class="badge b-${st}">${st}</span></td>
+    </tr>`;
+  }).join('')}
+  <tr style="border-top:1px solid var(--border);background:var(--s2)">
+    <td colspan="3" style="font-weight:700">TOTAL COLLECTED</td>
+    <td class="mono" style="color:var(--gold);font-weight:700;font-size:14px">${fmtX(grand)}</td>
+    <td colspan="6"></td>
+  </tr></tbody></table>`:'<div class="empty"><div>No members yet</div></div>';
+}
+
+function renderRevDay() {
+  const dateStr=nd($('rev-day').value)||today();
+  // Fees collected on this day
+  const joins=DB.payments.filter(p=>nd(p.paidOn||p.startDate)===dateStr);
+  const collected=joins.reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+  // Active members
+  const active=DB.members.filter(m=>{const s=new Date(m.startDate),e=new Date(m.expiry),d=new Date(dateStr);return d>=s&&d<=e;});
+  // Daily coverage value
+  let cov=0;
+  DB.payments.forEach(p=>{const s=new Date(p.startDate),e=new Date(p.expiry),d=new Date(dateStr);if(d>=s&&d<=e){const td=Math.max(1,diffDays(s,e));cov+=(parseFloat(p.fee)||0)/td;}});
+  const dayExp=DB.expenses.filter(e=>nd(e.date)===dateStr).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const pl=collected-dayExp;
+
+  $('rev-day-stats').innerHTML=`
+    <div class="stat gold"><div class="stat-lbl">Collected on ${dateStr}</div><div class="stat-val gold">${fmt(collected)}</div><div class="stat-sub">${joins.length} payment(s)</div></div>
+    <div class="stat cyan"><div class="stat-lbl">Active Members</div><div class="stat-val cyan">${active.length}</div><div class="stat-sub">Coverage: ${fmt(cov)}</div></div>
+    <div class="stat red"><div class="stat-lbl">Expenses</div><div class="stat-val red">${fmt(dayExp)}</div></div>
+    <div class="stat ${pl>=0?'green':'red'}"><div class="stat-lbl">Day P&L</div><div class="stat-val ${pl>=0?'green':'red'}">${pl>=0?'+':''}${fmt(pl)}</div></div>`;
+
+  let html='';
+  if (joins.length) {
+    html+=`<div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">💰 Fees Collected on ${dateStr}</div>`;
+    html+=`<table><thead><tr><th>Member</th><th>Biometric</th><th>Mobile</th><th>Fee</th><th>Duration</th><th>Daily Rate</th><th>Expiry</th></tr></thead><tbody>`;
+    joins.forEach(p=>{
+      const m=DB.members.find(x=>x.id===p.memberId);
+      const s=new Date(p.startDate),e=new Date(p.expiry),td=Math.max(1,diffDays(s,e)),dr=(parseFloat(p.fee)||0)/td;
+      html+=`<tr style="background:rgba(245,200,66,.03)">
+        <td><strong>${p.memberName}</strong></td>
+        <td class="mono" style="color:var(--cyan)">${m?.biometric||'—'}</td>
+        <td class="mono">${m?.mobile||'—'}</td>
+        <td class="mono" style="color:var(--gold);font-weight:700">${fmtX(parseFloat(p.fee)||0)}</td>
+        <td>${p.duration||1}mo</td>
+        <td class="mono" style="color:var(--text2)">${fmtX(dr)}/day</td>
+        <td class="mono">${p.expiry||'—'}</td>
+      </tr>`;
+    });
+    html+=`<tr style="border-top:1px solid var(--border)"><td colspan="3" style="font-weight:700">TOTAL</td><td class="mono" style="color:var(--gold);font-weight:700">${fmtX(collected)}</td><td colspan="3"></td></tr>`;
+    html+=`</tbody></table><br>`;
+  } else {
+    html+=`<div class="empty" style="padding:16px"><div>No fees collected on ${dateStr}</div></div>`;
+  }
+  if (active.length) {
+    html+=`<div style="font-size:11px;color:var(--text3);font-weight:600;margin:10px 0 8px;text-transform:uppercase;letter-spacing:.8px">📋 Active Members on ${dateStr} (${active.length})</div>`;
+    html+=`<table><thead><tr><th>Member</th><th>Biometric</th><th>Mobile</th><th>Fee</th><th>Daily Rate</th><th>Start</th><th>Expiry</th></tr></thead><tbody>`;
+    active.forEach(m=>{
+      const s=new Date(m.startDate),e=new Date(m.expiry),td=Math.max(1,diffDays(s,e)),dr=(parseFloat(m.fee)||0)/td;
+      html+=`<tr><td>${m.name}</td><td class="mono" style="color:var(--cyan)">${m.biometric||'—'}</td><td class="mono">${m.mobile||'—'}</td><td class="mono">${fmtX(parseFloat(m.fee)||0)}</td><td class="mono" style="color:var(--text2)">${fmtX(dr)}/day</td><td class="mono">${m.startDate||'—'}</td><td class="mono">${m.expiry||'—'}</td></tr>`;
+    });
+    html+=`</tbody></table>`;
+  }
+  $('rev-day-tbl').innerHTML=html;
+}
+
+function renderRevMonth() {
+  const mk=$('rev-month').value; if(!mk) return;
+  const [yr,mo]=mk.split('-').map(Number);
+  const dInM=new Date(yr,mo,0).getDate();
+  let rows=[], grand=0;
+  for(let d=1;d<=dInM;d++) {
+    const ds=`${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const joins=DB.payments.filter(p=>nd(p.paidOn||p.startDate)===ds);
+    const coll=joins.reduce((s,p)=>s+(parseFloat(p.fee)||0),0);
+    let cov=0;
+    DB.payments.forEach(p=>{const s=new Date(p.startDate),e=new Date(p.expiry),dt=new Date(ds);if(dt>=s&&dt<=e){const td=Math.max(1,diffDays(s,e));cov+=(parseFloat(p.fee)||0)/td;}});
+    const active=DB.members.filter(m=>{const s=new Date(m.startDate),e=new Date(m.expiry),dt=new Date(ds);return dt>=s&&dt<=e;}).length;
+    const dayExp=DB.expenses.filter(e=>nd(e.date)===ds).reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+    grand+=coll;
+    rows.push({ds,coll,joins:joins.length,active,cov,dayExp,pl:coll-dayExp});
+  }
+  const mExp=rows.reduce((s,r)=>s+r.dayExp,0), mPL=grand-mExp;
+  $('rev-day-stats').innerHTML=`
+    <div class="stat gold"><div class="stat-lbl">Fees Collected — ${monthLabel(mk)}</div><div class="stat-val gold">${fmtX(grand)}</div><div class="stat-sub">${rows.filter(r=>r.joins>0).length} days with payments</div></div>
+    <div class="stat red"><div class="stat-lbl">Month Expenses</div><div class="stat-val red">${fmtX(mExp)}</div></div>
+    <div class="stat ${mPL>=0?'green':'red'}"><div class="stat-lbl">Month P&L</div><div class="stat-val ${mPL>=0?'green':'red'}">${mPL>=0?'+':''}${fmtX(mPL)}</div></div>`;
+  $('rev-day-tbl').innerHTML=`<table><thead><tr>
+    <th>Date</th><th>Day</th><th>New Joins</th><th>Active</th><th>Fees Collected</th><th>Daily Coverage</th><th>Expenses</th><th>P&L</th>
+  </tr></thead><tbody>
+  ${rows.map(r=>{
+    const dn=new Date(r.ds).toLocaleDateString('en-IN',{weekday:'short'});
+    const isTd=r.ds===today();
+    return `<tr style="${isTd?'background:rgba(245,200,66,.04)':''}">
+      <td class="mono" style="${isTd?'color:var(--gold);font-weight:700':''}">${r.ds}${isTd?' ◀':''}</td>
+      <td style="color:var(--text3)">${dn}</td>
+      <td style="color:${r.joins>0?'var(--gold)':'var(--text3)'};font-weight:${r.joins>0?700:400}">${r.joins||'—'}</td>
+      <td>${r.active}</td>
+      <td class="mono" style="color:${r.coll>0?'var(--green)':'var(--text3)'};">${r.coll>0?fmtX(r.coll):'—'}</td>
+      <td class="mono" style="color:var(--text2);font-size:11px">${fmtX(r.cov)}</td>
+      <td class="mono" style="color:${r.dayExp>0?'var(--red)':'var(--text3)'}">${r.dayExp>0?fmtX(r.dayExp):'—'}</td>
+      <td class="mono"><span style="color:${r.coll>0||r.dayExp>0?(r.pl>=0?'var(--green)':'var(--red)'):'var(--text3)'}">${r.coll>0||r.dayExp>0?(r.pl>=0?'+':'')+fmtX(r.pl):'—'}</span></td>
+    </tr>`;
+  }).join('')}
+  <tr style="border-top:1px solid var(--border);background:var(--s2)">
+    <td colspan="4" style="font-weight:700">MONTH TOTAL</td>
+    <td class="mono" style="color:var(--gold);font-weight:700">${fmtX(grand)}</td>
+    <td></td>
+    <td class="mono" style="color:var(--red);font-weight:700">${fmtX(mExp)}</td>
+    <td class="mono"><span style="color:${mPL>=0?'var(--green)':'var(--red)'};font-weight:700">${mPL>=0?'+':''}${fmtX(mPL)}</span></td>
+  </tr></tbody></table>`;
+}
+
+// ═══════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════
+function openModal(id)  { $(id).classList.add('on'); }
+function closeModal(id) { $(id).classList.remove('on'); }
+
+// ═══════════════════════════════════════════════════
+// EXPORT / IMPORT JSON
+// ═══════════════════════════════════════════════════
+function exportJSON() {
+  const a=document.createElement('a');
+  a.href='data:application/json,'+encodeURIComponent(JSON.stringify(DB,null,2));
+  a.download='lotg-data-'+today()+'.json'; a.click();
+  toast('📦 Data exported!');
+}
+function onImportJSON(e) {
+  const f=e.target.files[0]; if(!f) return; e.target.value='';
+  const r=new FileReader();
+  r.onload=ev=>{ try{ const d=JSON.parse(ev.target.result);
+    if(d.members)DB.members=d.members; if(d.payments)DB.payments=d.payments; if(d.expenses)DB.expenses=d.expenses;
+    save(); renderDashboard(); toast('✅ Data imported!');
+  } catch{ toast('❌ Invalid JSON file','var(--red)'); } };
+  r.readAsText(f);
+}
+
+// ═══════════════════════════════════════════════════
+// GOOGLE SHEET SYNC
+// ═══════════════════════════════════════════════════
+const SHEET_URL="https://docs.google.com/spreadsheets/d/1c_4lYGEkv8eENpaJBjJqk2vFhZIndp1En0g5qnNqxxo/export?format=csv&gid=291845437";
+
+function setSyncBar(msg, on) {
+  const bar=$('sync-bar'); bar.classList[on?'add':'remove']('on');
+  $('sync-msg').textContent=msg;
+}
+function setSyncBtn(loading) {
+  const b=$('sync-btn'); b.disabled=loading; b.textContent=loading?'⏳ Syncing…':'🔄 Sync Sheet';
+}
+
+async function syncSheet() {
+  setSyncBtn(true); setSyncBar('Fetching Google Sheet…',true);
+  try {
+    const res=await fetch(SHEET_URL);
+    if(!res.ok) throw new Error('HTTP '+res.status+' — share sheet as Anyone with link → Viewer');
+    const csv=await res.text();
+    setSyncBar('Parsing data…',true);
+    const rows=parseCSV(csv);
+    if(!rows||!rows.length) throw new Error('No data rows found');
+    const {added,dupes,skipped}=importRows(rows,'gsheet');
+    save(); renderDashboard();
+    setSyncBar(`✅ +${added} new members · ${dupes} duplicates skipped`,true);
+    toast(`✅ Synced! +${added} new, ${dupes} skipped`);
+    setTimeout(()=>setSyncBar('',false),5000);
+  } catch(err) {
+    setSyncBar('❌ '+err.message,true);
+    toast('❌ '+err.message,'var(--red)');
+    setTimeout(()=>setSyncBar('',false),6000);
+  } finally { setSyncBtn(false); }
+}
+
+function parseCSV(text) {
+  const rows=[]; let row=[],cur='',inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i],nx=text[i+1];
+    if(c==='"'&&inQ&&nx==='"'){cur+='"';i++;}
+    else if(c==='"'){inQ=!inQ;}
+    else if(c===','&&!inQ){row.push(cur.trim());cur='';}
+    else if((c==='\n'||c==='\r')&&!inQ){if(cur!==''||row.length){row.push(cur.trim());rows.push(row);row=[];cur='';}}
+    else cur+=c;
+  }
+  if(cur!==''||row.length){row.push(cur.trim());rows.push(row);}
+  const hdrs=rows[0]||[];
+  return rows.slice(1).map(cols=>{const o={};hdrs.forEach((h,i)=>o[h.trim()]=cols[i]||'');return o;});
+}
+
+// ═══════════════════════════════════════════════════
+// EXCEL IMPORT
+// ═══════════════════════════════════════════════════
+let xlsRows=[];
+
+function onImportXLS(e) {
+  const f=e.target.files[0]; if(!f) return; e.target.value='';
+  const r=new FileReader();
+  r.onload=ev=>{
+    try {
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellDates:true});
+      // Pick best sheet
+      let sn=wb.SheetNames[0];
+      for(const n of wb.SheetNames){if(/form|response|member/i.test(n)){sn=n;break;}}
+      const ws=wb.Sheets[sn];
+      const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+      // Find header row
+      let hi=0;
+      for(let i=0;i<Math.min(10,raw.length);i++){const s=raw[i].join(' ').toLowerCase();if(s.includes('name')||s.includes('mobile')||s.includes('start')){hi=i;break;}}
+      const hdrs=raw[hi].map(h=>String(h));
+      const data=raw.slice(hi+1).filter(r=>r.some(c=>String(c).trim().length>1));
+      xlsRows={hdrs,data,sn};
+      showXLSPreview(hdrs,data,sn);
+    } catch(err){ toast('❌ '+err.message,'var(--red)'); }
+  };
+  r.readAsArrayBuffer(f);
+}
+
+function showXLSPreview(hdrs,data,sn) {
+  $('excel-info').innerHTML=`📄 <strong>${data.length}</strong> rows · 🗂 <strong>${hdrs.length}</strong> cols · 📋 Sheet: <strong>${sn}</strong>`;
+  $('excel-confirm-btn').textContent=`✅ Import ${data.length} Rows`;
+  $('excel-result').innerHTML='';
+  // Preview first 8 rows
+  const vis=['Full Name','Start Date','Type of Membership','Fees Amount','Type of payment','Mobile Number','Biometric Serial No.'];
+  const visIdx=vis.map(v=>hdrs.findIndex(h=>h.trim().toLowerCase()===v.toLowerCase())).filter(i=>i!==-1);
+  $('excel-preview').innerHTML=`<div style="font-size:10px;color:var(--text3);margin-bottom:6px">Preview (first 8 rows)</div>
+  <table><thead><tr>${visIdx.map(i=>`<th>${hdrs[i]}</th>`).join('')}</tr></thead><tbody>
+  ${data.slice(0,8).map(row=>`<tr>${visIdx.map(i=>`<td>${String(row[i]||'').slice(0,35)}</td>`).join('')}</tr>`).join('')}
+  </tbody></table>`;
+  openModal('excel-modal');
+}
+
+function confirmXLS() {
+  if(!xlsRows.hdrs) return;
+  const {added,dupes,skipped}=importRows(xlsRows.data.map(row=>{
+    const o={}; xlsRows.hdrs.forEach((h,i)=>o[h.trim()]=String(row[i]||'').trim()); return o;
+  }),'excel');
+  save(); renderDashboard();
+  $('excel-result').innerHTML=`<div style="padding:10px;background:rgba(45,255,154,.07);border:1px solid rgba(45,255,154,.2);border-radius:var(--radius);font-size:13px">
+    ✅ <strong style="color:var(--green)">${added} added</strong> · <strong style="color:var(--orange)">${dupes} duplicates skipped</strong></div>`;
+  $('excel-confirm-btn').textContent='✅ Done'; $('excel-confirm-btn').disabled=true;
+  toast(`✅ Imported ${added} members!`);
+  setTimeout(()=>{closeModal('excel-modal');$('excel-confirm-btn').disabled=false;$('excel-confirm-btn').textContent='✅ Import';},2000);
+}
+
+// ═══════════════════════════════════════════════════
+// CORE IMPORT ENGINE — shared by Excel + GSheet
+// ═══════════════════════════════════════════════════
+function getF(row, aliases) {
+  // Exact match first
+  for(const key of Object.keys(row)){
+    const k=key.toLowerCase().replace(/[\n\r\t]+/g,' ').replace(/\s+/g,' ').trim();
+    for(const a of aliases) if(k===a) return (row[key]||'').trim();
+  }
+  // Partial match (alias >4 chars only)
+  for(const key of Object.keys(row)){
+    const k=key.toLowerCase().replace(/[\n\r\t]+/g,' ').replace(/\s+/g,' ').trim();
+    for(const a of aliases) if(a.length>4&&k.includes(a)) return (row[key]||'').trim();
+  }
+  return '';
+}
+
+function parseDate(val) {
+  if(!val||val==='NaT'||val==='nan') return '';
+  if(val instanceof Date&&!isNaN(val)) return val.toISOString().split('T')[0];
+  const s=String(val).trim();
+  if(!s||s==='NaT') return '';
+  if(s.match(/^\d{4}-\d{2}-\d{2}/)) return s.slice(0,10);
+  if(s.includes('T')) return s.split('T')[0];
+  if(s.includes('/')) {
+    const [a,b,c]=s.split('/'); const cy=c?.split(' ')[0];
+    if(cy?.length===4) return `${cy}-${a.padStart(2,'0')}-${b.padStart(2,'0')}`;
+  }
+  if(!isNaN(val)&&Number(val)>1000) { const d=new Date(Math.round((Number(val)-25569)*86400000)); return d.toISOString().split('T')[0]; }
+  const d=new Date(s); return isNaN(d)?'':d.toISOString().split('T')[0];
+}
+
+function parseFee(val) {
+  return parseFloat(String(val||'').replace(/[₹,\s]/g,'').replace(/[^0-9.]/g,''))||0;
+}
+
+function parseDur(val) {
+  const s=String(val||'').toLowerCase();
+  if(s.includes('annual')||s.includes('year')||s.includes('12')) return 12;
+  if(s.includes('half')||/6\s*month/.test(s)) return 6;
+  if(s.includes('quarter')||/3\s*month/.test(s)) return 3;
+  if(/2\s*month/.test(s)) return 2;
+  if(s.includes('month')) return 1;
+  const n=parseInt(s); return(!isNaN(n)&&n>0&&n<=12)?n:1;
+}
+
+function parseMode(val) {
+  const s=String(val||'').toLowerCase();
+  return s.includes('upi')||s.includes('online')||s.includes('gpay')||s.includes('phonepe')||s.includes('neft')?'UPI':'Cash';
+}
+
+function importRows(rows, source) {
+  let added=0, dupes=0, skipped=0;
+  rows.forEach((row,idx)=>{
+    try {
+      const name=getF(row,['full name','name','member name','fullname']);
+      if(!name||name==='NaT'||name==='nan'||name.toLowerCase().startsWith('unnamed')){skipped++;return;}
+      const startRaw=getF(row,['start date','gym start date','joining date','date of joining']);
+      const startDate=nd(parseDate(startRaw))||today();
+      const nameLower=name.trim().toLowerCase();
+
+      // ── DUPLICATE CHECK: same name + same start date ──────────
+      const isDup=
+        DB.members.some(ex=>ex.name&&ex.name.trim().toLowerCase()===nameLower&&nd(ex.startDate)===nd(startDate))||
+        DB.payments.some(p=>p.memberName&&p.memberName.trim().toLowerCase()===nameLower&&nd(p.startDate)===nd(startDate));
+      if(isDup){dupes++;return;}
+      // ──────────────────────────────────────────────────────────
+
+      const fee=parseFee(getF(row,['fees amount','fee amount','fees','fee']));
+      const dur=parseDur(getF(row,['type of membership','membership type','membership','plan']));
+      const expiry=nd(addMonths(startDate,dur));
+      const mode=parseMode(getF(row,['type of payment','payment mode','payment type','mode of payment','payment']));
+
+      const m={
+        id:uid(),
+        name,
+        age:getF(row,['age']),
+        gender:getF(row,['gender','sex']),
+        mobile:getF(row,['mobile number','mobile','phone','contact number']),
+        biometric:getF(row,['biometric serial no.','biometric serial no','biometric serial','biometric no','biometric','s no.','s no','serial no']),
+        address:getF(row,['address']),
+        email:getF(row,['email','email id']),
+        emergency:getF(row,['emergency contact number','emergency contact']),
+        paymentMode:mode,
+        startDate, duration:dur, expiry, fee,
+        note:getF(row,['note','notes','remark','remarks']),
+      };
+      DB.members.push(m);
+      DB.payments.push({
+        id:uid(), memberId:m.id, memberName:m.name,
+        fee, startDate, expiry, duration:dur,
+        paymentMode:mode, note:m.note||'',
+        paidOn:startDate, source
+      });
+      added++;
+    } catch(err){ skipped++; }
+  });
+  return {added,dupes,skipped};
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+load();
+$('mf-start').value=today();
+$('ef-date').value=today();
+$('rf-paid').value=today();
+toggleManual();
+renderDashboard();
+</script>
+</body>
+</html>
